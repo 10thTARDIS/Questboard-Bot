@@ -56,11 +56,17 @@ async def mix_to_mp3(wav_paths: list[Path], output_path: Path) -> None:
 
     log.debug("FFmpeg command: %s", " ".join(cmd))
 
-    proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+    except FileNotFoundError:
+        raise RuntimeError(
+            "FFmpeg not found — ensure it is installed and available on PATH"
+        )
+
     _, stderr = await proc.communicate()
 
     if proc.returncode != 0:

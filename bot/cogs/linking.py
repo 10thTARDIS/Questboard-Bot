@@ -36,6 +36,8 @@ class LinkingCog(commands.Cog, name="Linking"):
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        # user_id → active polling task (at most one per user at a time)
+        self._pending: dict[int, asyncio.Task] = {}
 
     # ── /link ─────────────────────────────────────────────────────────────────
 
@@ -90,49 +92,61 @@ class LinkingCog(commands.Cog, name="Linking"):
             )
             return
 
+        # Cancel any previous pending link for this user before starting a new one.
+        existing = self._pending.get(user.id)
+        if existing and not existing.done():
+            existing.cancel()
+
         # Poll for confirmation in the background so we don't block the gateway.
-        asyncio.create_task(
+        task = asyncio.create_task(
             self._poll_link_status(user, token),
             name=f"link-poll-{user.id}",
         )
+        self._pending[user.id] = task
+        task.add_done_callback(lambda _: self._pending.pop(user.id, None))
 
     async def _poll_link_status(self, user: discord.User, token: str) -> None:
         """Poll Quest Board until the token is consumed or the window expires."""
-        elapsed = 0
-        while elapsed < _LINK_TIMEOUT_SECONDS:
-            await asyncio.sleep(_POLL_INTERVAL_SECONDS)
-            elapsed += _POLL_INTERVAL_SECONDS
-
-            try:
-                status = await self.bot.api.get_link_status(token)
-            except Exception as exc:
-                log.warning(
-                    "Error polling link-status for user %s (elapsed=%ds): %s",
-                    user.id, elapsed, exc,
-                )
-                # Transient error — keep trying until the window closes.
-                continue
-
-            if status.linked:
-                log.info("Discord user %s successfully linked (elapsed=%ds).", user.id, elapsed)
-                try:
-                    await user.send(
-                        "✅ Your Discord account is now linked to Quest Board! "
-                        "Your emoji reactions on session messages will be recorded as votes."
-                    )
-                except discord.Forbidden:
-                    pass
-                return
-
-        # Window closed without a successful link.
-        log.info("Link token expired for user %s after %ds.", user.id, elapsed)
         try:
-            await user.send(
-                "The Quest Board link expired before it was used. "
-                "Run `/link` again whenever you're ready."
-            )
-        except discord.Forbidden:
-            pass
+            elapsed = 0
+            while elapsed < _LINK_TIMEOUT_SECONDS:
+                await asyncio.sleep(_POLL_INTERVAL_SECONDS)
+                elapsed += _POLL_INTERVAL_SECONDS
+
+                try:
+                    status = await self.bot.api.get_link_status(token)
+                except Exception as exc:
+                    log.warning(
+                        "Error polling link-status for user %s (elapsed=%ds): %s",
+                        user.id, elapsed, exc,
+                    )
+                    # Transient error — keep trying until the window closes.
+                    continue
+
+                if status.linked:
+                    log.info("Discord user %s successfully linked (elapsed=%ds).", user.id, elapsed)
+                    try:
+                        await user.send(
+                            "✅ Your Discord account is now linked to Quest Board! "
+                            "Your emoji reactions on session messages will be recorded as votes."
+                        )
+                    except discord.Forbidden:
+                        pass
+                    return
+
+            # Window closed without a successful link.
+            log.info("Link token expired for user %s after %ds.", user.id, elapsed)
+            try:
+                await user.send(
+                    "The Quest Board link expired before it was used. "
+                    "Run `/link` again whenever you're ready."
+                )
+            except discord.Forbidden:
+                pass
+
+        except asyncio.CancelledError:
+            # A new /link invocation cancelled this task — exit silently.
+            log.debug("Link polling task cancelled for user %s.", user.id)
 
     # ── /unlink ───────────────────────────────────────────────────────────────
 

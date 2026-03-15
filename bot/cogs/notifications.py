@@ -135,10 +135,6 @@ class NotificationsCog(commands.Cog, name="Notifications"):
             log.warning("Notify payload missing channel_id (event_type=%s)", event_type)
             return
 
-        channel = await self._resolve_channel(channel_id_str)
-        if channel is None:
-            return
-
         _handlers = {
             "session_proposed": self._handle_proposed,
             "session_confirmed": self._handle_confirmed,
@@ -152,6 +148,9 @@ class NotificationsCog(commands.Cog, name="Notifications"):
             return
 
         try:
+            channel = await self._resolve_channel(channel_id_str)
+            if channel is None:
+                return
             await handler(channel, session_id, extra)
         except Exception:
             log.exception(
@@ -194,6 +193,13 @@ class NotificationsCog(commands.Cog, name="Notifications"):
         slot_ids: list[str] = extra.get("slot_ids") or []
         title = extra.get("title") or "Untitled Session"
         campaign_name = extra.get("campaign_name") or "Quest Board"
+
+        if len(slot_ids) > len(_SLOT_EMOJIS):
+            log.warning(
+                "Session %s has %d slots but only %d emoji reactions will be seeded "
+                "(slots beyond index %d cannot receive votes).",
+                session_id, len(slot_ids), len(_SLOT_EMOJIS), len(_SLOT_EMOJIS) - 1,
+            )
 
         embed = discord.Embed(title=f"📋 New Session Proposed — {title}", color=_COLOR_PROPOSED)
         embed.set_footer(text=campaign_name)

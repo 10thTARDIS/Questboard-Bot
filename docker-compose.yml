@@ -12,6 +12,12 @@ services:
       - "8080:8080"
     volumes:
       - audio_temp:/tmp/questboard-audio
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   whisper:
     image: ahmetoner/whisper-asr-webservice:latest

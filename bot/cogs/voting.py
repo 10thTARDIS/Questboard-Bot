@@ -69,8 +69,14 @@ class VotingCog(commands.Cog, name="Voting"):
         if mapping is None:
             return  # Not a session_proposed message — ignore.
 
-        session_id_str: str = mapping["session_id"]
-        slot_order: list[str] = mapping["slot_order"]
+        try:
+            session_id_str: str = mapping["session_id"]
+            slot_order: list[str] = mapping["slot_order"]
+        except (KeyError, TypeError) as exc:
+            log.warning(
+                "Malformed message mapping for message_id=%s: %s", payload.message_id, exc
+            )
+            return
 
         if slot_index >= len(slot_order):
             log.warning(
@@ -81,6 +87,15 @@ class VotingCog(commands.Cog, name="Voting"):
 
         slot_id_str = slot_order[slot_index]
         discord_user_id = str(payload.user_id)
+
+        try:
+            session_uuid = uuid.UUID(session_id_str)
+            slot_uuid = uuid.UUID(slot_id_str)
+        except ValueError as exc:
+            log.warning(
+                "Invalid UUID in message mapping for message_id=%s: %s", payload.message_id, exc
+            )
+            return
 
         # Check that the user has a Quest Board platform link.
         try:
@@ -98,8 +113,8 @@ class VotingCog(commands.Cog, name="Voting"):
         # Submit the vote.
         try:
             await self.bot.api.put_vote(
-                session_id=uuid.UUID(session_id_str),
-                slot_id=uuid.UUID(slot_id_str),
+                session_id=session_uuid,
+                slot_id=slot_uuid,
                 discord_user_id=discord_user_id,
                 availability=availability,
             )

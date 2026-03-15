@@ -43,6 +43,9 @@ class RecordingCog(commands.Cog, name="Recording"):
         self.bot = bot
         # guild_id → _RecordingSession  (one active recording per guild)
         self._active: dict[int, "_RecordingSession"] = {}
+        # guild IDs currently going through the setup awaits (between guard check and
+        # state insertion) — prevents a second /record start slipping through the gap.
+        self._starting: set[int] = set()
 
     # ── /record group ─────────────────────────────────────────────────────────
 
@@ -64,13 +67,17 @@ class RecordingCog(commands.Cog, name="Recording"):
             )
             return
 
-        if guild.id in self._active:
+        if guild.id in self._active or guild.id in self._starting:
             await interaction.response.send_message(
                 "A recording is already in progress for this server. "
                 "Run `/record stop` to finish it first.",
                 ephemeral=True,
             )
             return
+
+        # Reserve the guild slot before any awaits so a concurrent /record start
+        # from the same guild fails the guard above rather than racing through.
+        self._starting.add(guild.id)
 
         # Validate the session_id format early.
         try:
@@ -94,69 +101,76 @@ class RecordingCog(commands.Cog, name="Recording"):
 
         voice_channel = member.voice.channel
 
-        # Fetch session metadata for the announcement (best-effort).
-        session_title = "Unknown Session"
-        campaign_name = "Quest Board"
-        game_system: str | None = None
         try:
-            timeslots = await self.bot.api.get_session_timeslots(session_uuid)
-            campaign_name = timeslots.campaign_name or campaign_name
-            game_system = timeslots.game_system
-        except Exception as exc:
-            log.warning("Could not fetch session metadata for %s: %s", session_id, exc)
+            # Fetch session metadata for the announcement (best-effort).
+            session_title = "Unknown Session"
+            campaign_name = "Quest Board"
+            game_system: str | None = None
+            try:
+                timeslots = await self.bot.api.get_session_timeslots(session_uuid)
+                campaign_name = timeslots.campaign_name or campaign_name
+                game_system = timeslots.game_system
+            except Exception as exc:
+                log.warning("Could not fetch session metadata for %s: %s", session_id, exc)
 
-        await interaction.response.defer()
+            await interaction.response.defer()
 
-        # Join the voice channel.
-        try:
-            vc = await voice_channel.connect()
-        except discord.ClientException as exc:
-            await interaction.followup.send(f"Could not join voice channel: {exc}", ephemeral=True)
-            return
-        except Exception as exc:
-            log.error("Unexpected error joining voice channel: %s", exc)
-            await interaction.followup.send(
-                "An unexpected error occurred while joining the voice channel.", ephemeral=True
+            # Join the voice channel.
+            try:
+                vc = await voice_channel.connect()
+            except discord.ClientException as exc:
+                await interaction.followup.send(
+                    f"Could not join voice channel: {exc}", ephemeral=True
+                )
+                return
+            except Exception as exc:
+                log.error("Unexpected error joining voice channel: %s", exc)
+                await interaction.followup.send(
+                    "An unexpected error occurred while joining the voice channel.",
+                    ephemeral=True,
+                )
+                return
+
+            # Set up the sink and start recording.
+            audio_dir = Path(self.bot.settings.audio_temp_dir)
+            audio_dir.mkdir(parents=True, exist_ok=True)
+            audio_dir.chmod(0o700)
+
+            sink = discord.sinks.WaveSink()
+            vc.start_recording(sink, self._on_recording_done, interaction.channel)
+
+            rec = _RecordingSession(
+                session_id=session_uuid,
+                session_title=session_title,
+                campaign_name=campaign_name,
+                game_system=game_system,
+                voice_client=vc,
+                sink=sink,
+                text_channel=interaction.channel,
+                audio_dir=audio_dir,
+                started_at=time.monotonic(),
             )
-            return
+            self._active[guild.id] = rec
 
-        # Set up the sink and start recording.
-        audio_dir = Path(self.bot.settings.audio_temp_dir)
-        audio_dir.mkdir(parents=True, exist_ok=True)
+            # Schedule the auto-stop.
+            max_seconds = self.bot.settings.max_recording_hours * 3600
+            rec.auto_stop_handle = asyncio.get_event_loop().call_later(
+                max_seconds,
+                lambda: asyncio.create_task(
+                    self._auto_stop(guild.id, interaction.channel),
+                    name=f"auto-stop-{guild.id}",
+                ),
+            )
 
-        sink = discord.sinks.WaveSink()
-        vc.start_recording(sink, self._on_recording_done, interaction.channel)
-
-        rec = _RecordingSession(
-            session_id=session_uuid,
-            session_title=session_title,
-            campaign_name=campaign_name,
-            game_system=game_system,
-            voice_client=vc,
-            sink=sink,
-            text_channel=interaction.channel,
-            audio_dir=audio_dir,
-            started_at=time.monotonic(),
-        )
-        self._active[guild.id] = rec
-
-        # Schedule the auto-stop.
-        max_seconds = self.bot.settings.max_recording_hours * 3600
-        rec.auto_stop_handle = asyncio.get_event_loop().call_later(
-            max_seconds,
-            lambda: asyncio.create_task(
-                self._auto_stop(guild.id, interaction.channel),
-                name=f"auto-stop-{guild.id}",
-            ),
-        )
-
-        await interaction.followup.send(
-            embed=_recording_started_embed(session_title, campaign_name, voice_channel.name)
-        )
-        log.info(
-            "Recording started: session=%s guild=%s voice_channel=%s",
-            session_id, guild.id, voice_channel.name,
-        )
+            await interaction.followup.send(
+                embed=_recording_started_embed(session_title, campaign_name, voice_channel.name)
+            )
+            log.info(
+                "Recording started: session=%s guild=%s voice_channel=%s",
+                session_id, guild.id, voice_channel.name,
+            )
+        finally:
+            self._starting.discard(guild.id)
 
     @record.command(name="stop", description="Stop recording and process the transcript.")
     async def record_stop(self, interaction: discord.Interaction) -> None:
