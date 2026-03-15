@@ -29,13 +29,17 @@ joins voice channels to record, transcribe, and summarise game sessions.
 ## Quick Start
 
 ```bash
-# 1. Copy the example env file
+# 1. Clone the repository
+git clone https://github.com/10thTARDIS/Questboard-Bot.git
+cd Questboard-Bot
+
+# 2. Copy the example env file
 cp .env.example .env
 
-# 2. Fill in required values (see Configuration below)
+# 3. Fill in required values (see Configuration below)
 $EDITOR .env
 
-# 3. Start the bot
+# 4. Start the bot
 docker compose up -d
 ```
 
