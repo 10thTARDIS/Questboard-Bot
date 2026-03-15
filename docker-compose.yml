@@ -1,0 +1,33 @@
+services:
+  bot:
+    build: .
+    env_file: .env
+    depends_on:
+      - whisper
+    restart: unless-stopped
+    ports:
+      # HTTP server for incoming Quest Board notify calls.
+      # Set QUESTBOARD_BOT_URL=http://<this-host>:8080 in Quest Board's .env.
+      # If Quest Board runs on the same Docker host, use its internal network instead.
+      - "8080:8080"
+    volumes:
+      - audio_temp:/tmp/questboard-audio
+
+  whisper:
+    image: ahmetoner/whisper-asr-webservice:latest
+    # NOT exposed on public ports — internal only.
+    # ASR_MODEL options: base (fastest), small, medium (most accurate)
+    environment:
+      - ASR_MODEL=base
+    restart: unless-stopped
+
+  # Uncomment only if Ollama is not already running on your home server.
+  # ollama:
+  #   image: ollama/ollama
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   restart: unless-stopped
+
+volumes:
+  audio_temp:
+  # ollama_data:

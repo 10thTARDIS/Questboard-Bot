@@ -1,0 +1,60 @@
+# Environment & secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+secrets/
+*.secret
+*.token
+
+# Private keys & certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# Audio (never commit)
+/tmp/questboard-audio/
+*.mp3
+*.wav
+*.pcm
+*.ogg
+
+# Transcripts, summaries & logs — may contain PII or session content
+*.transcript
+*.summary
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker overrides (may contain local secrets)
+docker-compose.override.yml
+
+# Pre-commit
+.pre-commit-cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
