@@ -105,6 +105,30 @@ Once linked, players vote on proposed session times by reacting to the session
 embed with the regional indicator emojis (🇦, 🇧, 🇨 …). Adding a reaction
 records a **yes** vote; removing it records a **no** vote.
 
+## Attendance RSVP
+
+When a session is confirmed, the bot posts a confirmation embed with ✅ and ❌
+reactions. Players react to indicate whether they'll attend — this writes
+directly to Quest Board's attendance records. Reactions require a linked account
+(see [Account Linking](#account-linking) above).
+
+## Session Commands
+
+| Command | Description |
+|---|---|
+| `/next` | Show the next confirmed session with a countdown |
+| `/recap <session_id>` | Show the stored summary and GM notes for a session |
+| `/note <text>` | Add a private note to the next (or a specified) session |
+| `/ask <question>` | Ask a natural-language question about campaign history |
+
+`/note` and `/ask` require a linked account. `/next`, `/recap`, and `/note`
+require Quest Board v0.9.0 backend endpoints. `/ask` additionally requires the
+v0.10.0 history endpoint — see [docs/questboard-improvements.md](docs/questboard-improvements.md)
+for what needs to be added on the Quest Board side.
+
+The `session_id` for `/recap` and `/note` is the UUID shown in the Quest Board
+session URL.
+
 ## Recording a Session
 
 Only the GM needs to run these commands:
@@ -174,14 +198,16 @@ Quest Board Backend
   │  POST /notify  →  Bot HTTP server (:8080)
   ▼
 questboard-bot
-  ├── cogs/notifications.py  ← rich embeds + seed reactions
-  ├── cogs/voting.py         ← reaction add/remove → votes API
+  ├── cogs/notifications.py  ← rich embeds + seed reactions + attendance RSVP
+  ├── cogs/voting.py         ← reaction add/remove → votes & attendance API
   ├── cogs/linking.py        ← /link /unlink slash commands
-  └── cogs/recording.py      ← /record start|stop + voice pipeline
+  ├── cogs/recording.py      ← /record start|stop + voice pipeline
+  └── cogs/sessions.py       ← /next /recap /note /ask slash commands
         │
         ▼
   services/transcription.py  ← Whisper (local container or OpenAI API)
   services/summarisation.py  ← Ollama, Anthropic, or OpenAI
+  services/qa.py             ← campaign Q&A using session summaries as context
         │
         ▼
 Quest Board API  (BOT_API_KEY auth via X-Bot-Key header)
@@ -211,6 +237,22 @@ Quest Board API  (BOT_API_KEY auth via X-Bot-Key header)
 **Ollama summarisation fails**
 - Confirm Ollama is running and the model is pulled: `ollama pull llama3`
 - Check `OLLAMA_URL` points to the correct host
+
+**`/next`, `/recap`, or `/note` returns "Could not reach Quest Board"**
+- These commands require Quest Board backend endpoints added in v0.9.0
+  (`GET /api/bot/guilds/{guild_id}/next-session`, `GET /api/bot/sessions/{id}/summary`,
+  `POST /api/bot/sessions/{id}/notes`) — check the improvements backlog in
+  `docs/questboard-improvements.md` for implementation details
+
+**`/ask` returns "No session recordings found"**
+- `/ask` searches sessions that have a stored summary; summaries are only
+  created when a session is recorded with `/record start` and the transcript
+  is uploaded — run at least one recorded session first
+- `/ask` also requires the `GET /api/bot/guilds/{guild_id}/sessions/history`
+  Quest Board endpoint (v0.10.0) to be deployed
+
+**`/note` says account isn't linked**
+- Run `/link` first to connect your Discord account to Quest Board
 
 ## License
 

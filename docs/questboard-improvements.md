@@ -131,9 +131,9 @@ a "session complete" message, or take any other post-session action automaticall
 `_auto_complete_sessions_async` to call `send_session_completed.delay(...)` for
 each session it transitions. Add a new `send_session_completed` task that calls
 `POST {bot_url}/notify` with `event_type: "session_completed"`. Add a handler
-for this event in `bot/cogs/notifications.py` — at minimum a brief embed noting
-the session is over; in v0.6.0+ this could also prompt the GM to run `/record`
-if a recording was not already started.
+for this event in `bot/cogs/notifications.py` — post a brief embed noting the
+session is over and prompt the GM to run `/record` if no transcript has been
+uploaded yet (check `session.transcript_updated_at IS NULL`).
 
 **Priority:** 4 / 5
 
