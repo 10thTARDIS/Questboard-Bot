@@ -17,8 +17,7 @@ joins voice channels to record, transcribe, and summarise game sessions.
 | v0.6.0 | Recording & transcription | ✅ Done |
 | v0.7.0 | Polish & hardening | ✅ Done |
 | v0.8.0 | Attendance RSVP | ✅ Done |
-| v0.9.0 | `/next`, `/recap`, `/note` | 🔜 Next |
-| v0.10.0 | Campaign Q&A (`/ask`) | 🔜 Planned |
+| v0.9.0 | `/next`, `/recap`, `/note`, `/ask` | ✅ Done (needs Quest Board v0.9.0+) |
 
 ## Prerequisites
 

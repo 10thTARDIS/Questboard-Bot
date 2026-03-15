@@ -60,6 +60,37 @@ class SessionTimeslotsResponse(BaseModel):
     slots: list[TimeSlotItem]
 
 
+class NextSessionResponse(BaseModel):
+    """Returned by GET /api/bot/guilds/{guild_id}/next-session (added in v0.9.0)."""
+
+    session_id: uuid.UUID
+    campaign_id: uuid.UUID
+    campaign_name: str
+    game_system: str | None
+    title: str | None
+    confirmed_time: datetime
+
+
+class SessionSummaryResponse(BaseModel):
+    """Returned by GET /api/bot/sessions/{session_id}/summary (added in v0.9.0)."""
+
+    session_id: uuid.UUID
+    campaign_name: str
+    title: str | None
+    confirmed_time: datetime | None
+    summary: str | None
+    session_notes: str | None
+
+
+class SessionHistoryItem(BaseModel):
+    """One item in the list returned by GET /api/bot/guilds/{guild_id}/sessions/history."""
+
+    session_id: uuid.UUID
+    title: str | None
+    confirmed_time: datetime
+    summary: str
+
+
 class PlatformLinkResponse(BaseModel):
     """Returned by GET /api/bot/platform-links/{platform}/{id} (added in v0.2.0)."""
 
@@ -222,6 +253,52 @@ class QuestBoardClient:
         resp = await self._http.get("/api/bot/settings")
         resp.raise_for_status()
         return BotSettingsResponse.model_validate(resp.json())
+
+    # ── Endpoints added in Quest Board v0.9.0 ─────────────────────────────────
+
+    async def get_next_session(self, guild_id: str) -> NextSessionResponse | None:
+        """Return the next confirmed session for the campaign linked to this guild.
+
+        Returns None if no campaign has this guild_id or no upcoming session exists.
+        """
+        resp = await self._http.get(f"/api/bot/guilds/{guild_id}/next-session")
+        if resp.status_code == 404:
+            return None
+        resp.raise_for_status()
+        return NextSessionResponse.model_validate(resp.json())
+
+    async def get_session_summary(self, session_id: uuid.UUID) -> SessionSummaryResponse:
+        """Return a session's metadata and stored summary/notes for the recap embed."""
+        resp = await self._http.get(f"/api/bot/sessions/{session_id}/summary")
+        resp.raise_for_status()
+        return SessionSummaryResponse.model_validate(resp.json())
+
+    async def post_session_note(
+        self, session_id: uuid.UUID, discord_user_id: str, note: str
+    ) -> dict:
+        """Create (or append to) a private SessionNote on behalf of a linked Discord user."""
+        resp = await self._http.post(
+            f"/api/bot/sessions/{session_id}/notes",
+            json={"discord_user_id": discord_user_id, "note": note},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    # ── Endpoints added in Quest Board v0.10.0 ────────────────────────────────
+
+    async def get_session_history(
+        self, guild_id: str, limit: int = 10
+    ) -> list[SessionHistoryItem]:
+        """Return the most recent completed sessions with summaries for the guild's campaign.
+
+        Only sessions where a summary has been uploaded are returned.
+        """
+        resp = await self._http.get(
+            f"/api/bot/guilds/{guild_id}/sessions/history",
+            params={"limit": limit},
+        )
+        resp.raise_for_status()
+        return [SessionHistoryItem.model_validate(s) for s in resp.json()]
 
     async def post_linking_token(
         self, token: str, discord_user_id: str

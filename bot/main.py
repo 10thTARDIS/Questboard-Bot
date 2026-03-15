@@ -26,6 +26,7 @@ _COGS = [
     "bot.cogs.linking",
     "bot.cogs.voting",
     "bot.cogs.recording",
+    "bot.cogs.sessions",
 ]
 
 

@@ -13,6 +13,52 @@ _Nothing yet._
 
 ---
 
+## [0.9.0] — 2026-03-14
+
+Session commands and campaign Q&A. All four slash commands are implemented
+bot-side; `/next`, `/recap`, and `/note` require the Quest Board v0.9.0
+backend endpoints; `/ask` requires the v0.10.0 endpoint. Until those are
+deployed the commands return a clear error rather than crashing.
+
+### Added
+
+- **`bot/cogs/sessions.py`** — new cog with four slash commands:
+  - **`/next`** — fetches the next confirmed session for the guild via
+    `GET /api/bot/guilds/{guild_id}/next-session` and posts a green embed
+    with `<t:{ts}:F>` / `<t:{ts}:R>` countdown; graceful 404 handling
+  - **`/recap <session_id>`** — fetches summary and GM notes via
+    `GET /api/bot/sessions/{session_id}/summary`; shows summary as embed
+    description, GM notes as a field, or a prompt to use `/record start`
+    if neither is present yet
+  - **`/note <text> [session_id]`** — verifies the user is linked,
+    auto-resolves to the next upcoming session if no session_id is given,
+    calls `POST /api/bot/sessions/{session_id}/notes`; all responses
+    ephemeral (notes are private)
+  - **`/ask <question>`** — fetches up to 10 completed sessions with
+    summaries, passes them to `services/qa.answer_question`, and posts
+    the answer as an embed; footer shows how many sessions were searched
+
+- **`bot/services/qa.py`** — campaign Q&A service:
+  - `answer_question(question, sessions, campaign_name, game_system, settings)`
+  - Reuses the same Ollama / Anthropic / OpenAI backends and mode selection
+    as `summarisation.py`; no new config required
+  - System prompt instructs the LLM to answer only from provided summaries
+    and say clearly when it lacks information
+  - Per-session summaries truncated to 800 chars to stay within model limits
+  - `_build_prompt` formats sessions chronologically with title and date
+
+### Changed
+
+- **`bot/api_client.py`** — four new response models and async methods:
+  - `NextSessionResponse` + `get_next_session(guild_id)`
+  - `SessionSummaryResponse` + `get_session_summary(session_id)`
+  - `post_session_note(session_id, discord_user_id, note)`
+  - `SessionHistoryItem` + `get_session_history(guild_id, limit=10)`
+
+- **`bot/main.py`** — added `"bot.cogs.sessions"` to `_COGS`
+
+---
+
 ## [0.8.0] — 2026-03-14
 
 Attendance RSVP. Session-confirmed embeds now include ✅ / ❌ reactions so
@@ -244,7 +290,8 @@ not yet send messages or record votes.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.5.0...v0.6.0
