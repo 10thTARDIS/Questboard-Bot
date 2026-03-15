@@ -13,6 +13,52 @@ _Nothing yet._
 
 ---
 
+## [0.6.0] — 2026-03-14
+
+Voice recording, transcription, and summarisation pipeline.  GMs can record
+a voice session directly from Discord; the audio is automatically transcribed
+and summarised, and the results are uploaded to Quest Board.
+
+### Added
+
+- **`bot/cogs/recording.py`** — full implementation replacing the v0.1.0 stub:
+  - **`/record start <session_id>`** — validates the UUID, requires the GM to
+    be in a voice channel, fetches session metadata from the API for the
+    announcement embed, connects to voice and starts a `discord.sinks.WaveSink`;
+    schedules an auto-stop at `MAX_RECORDING_HOURS`
+  - **`/record stop`** — stops the sink, disconnects from voice, hands off to
+    the processing pipeline as a background task
+  - Processing pipeline: collects per-user WAV files from the sink → mixes to
+    mono MP3 (`utils/audio`) → deletes WAVs → transcribes (`services/transcription`)
+    → summarises (`services/summarisation`) → uploads via
+    `POST /api/bot/sessions/{id}/transcript` → posts a summary embed; cleans up
+    the MP3 on completion or error
+  - Auto-stop fires after `MAX_RECORDING_HOURS` with a channel notice
+  - One active recording per guild enforced; clear errors if already recording
+    or if the GM is not in a voice channel
+  - Transcript content is never logged — only metadata (duration, word count,
+    file sizes)
+
+- **`bot/utils/audio.py`** — `mix_to_mp3(wav_paths, output_path)` wraps an
+  FFmpeg subprocess; single-input path skips `amix` filter; logs file size on
+  completion; raises `RuntimeError` on non-zero FFmpeg exit
+
+- **`bot/services/transcription.py`** — `transcribe(mp3_path, settings)`:
+  - `WHISPER_MODE=local` — multipart POST to ahmetoner/whisper-asr-webservice
+    at `WHISPER_API_URL/asr`
+  - `WHISPER_MODE=api` — OpenAI `POST /v1/audio/transcriptions` (whisper-1)
+  - 10-minute timeout; raises `RuntimeError` on failure
+
+- **`bot/services/summarisation.py`** — `summarise(transcript, campaign_name, game_system, settings)`:
+  - `SUMMARISER_MODE=ollama` — `POST /api/generate` to local Ollama
+  - `SUMMARISER_MODE=api` — Anthropic claude-haiku-4-5-20251001 if
+    `ANTHROPIC_API_KEY` set, otherwise OpenAI gpt-4o-mini
+  - TTRPG-focused system prompt: key events, NPC introductions, player
+    decisions, and a "What's next?" hook
+  - 5-minute timeout; raises `RuntimeError` on failure
+
+---
+
 ## [0.5.0] — 2026-03-14
 
 Reaction voting. Emoji reactions on session_proposed messages are now
@@ -140,7 +186,8 @@ not yet send messages or record votes.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.2.0...v0.3.0
