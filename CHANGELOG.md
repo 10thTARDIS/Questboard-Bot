@@ -13,6 +13,27 @@ _Nothing yet._
 
 ---
 
+## [0.4.0] — 2026-03-14
+
+Discord account linking. Players can connect their Discord identity to Quest
+Board so that emoji reactions on session messages are recorded as votes against
+their Quest Board account.
+
+### Changed
+
+- **`bot/cogs/linking.py`** — full implementation replacing the v0.1.0 stub:
+  - **`/link`** — generates a `secrets.token_hex(32)` token, registers it in
+    Quest Board's Redis via `POST /api/bot/linking-tokens` (TTL 10 min), sends
+    the user a DM with `{questboard_public_url}/auth/link?token=<token>`, then
+    polls `GET /api/bot/link-status/{token}` every 30 s for up to 10 min;
+    sends a confirmation DM on success or an expiry DM on timeout; handles
+    `discord.Forbidden` (DMs disabled) and Quest Board API errors gracefully
+  - **`/unlink`** — directs the user to their Quest Board profile page; a
+    dedicated bot-facing unlink endpoint is tracked in
+    `docs/questboard-improvements.md` (Priority 3)
+
+---
+
 ## [0.3.0] — 2026-03-15
 
 Bot-driven Discord notifications. Quest Board's Celery tasks now call
@@ -96,7 +117,8 @@ not yet send messages or record votes.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/10thTARDIS/Questboard-Bot/releases/tag/v0.1.0

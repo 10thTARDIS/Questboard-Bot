@@ -12,8 +12,8 @@ joins voice channels to record, transcribe, and summarise game sessions.
 | v0.1.0 | Scaffold & API client | ✅ Done |
 | v0.2.0 | Quest Board additions | ✅ Done |
 | v0.3.0 | Discord notifications | ✅ Done |
-| v0.4.0 | Account linking | 🔜 Next |
-| v0.5.0 | Reaction voting | 🔜 Planned |
+| v0.4.0 | Account linking | ✅ Done |
+| v0.5.0 | Reaction voting | 🔜 Next |
 | v0.6.0 | Recording & transcription | 🔜 Planned |
 | v0.7.0 | Polish & hardening | 🔜 Planned |
 
