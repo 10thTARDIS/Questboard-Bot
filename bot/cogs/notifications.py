@@ -44,6 +44,9 @@ log = logging.getLogger(__name__)
 # Regional indicator letters A–E, one per time slot.
 _SLOT_EMOJIS = ["🇦", "🇧", "🇨", "🇩", "🇪"]
 
+# Attendance RSVP reactions seeded on session_confirmed embeds.
+_ATTENDANCE_EMOJIS = ["✅", "❌"]
+
 _MSG_MAP_PREFIX = "qb_msg:"
 _MSG_MAP_TTL = 30 * 24 * 3600  # 30 days — long enough to cover any voting window
 
@@ -93,10 +96,21 @@ class NotificationsCog(commands.Cog, name="Notifications"):
             return None
 
     async def _store_message_map(
-        self, message_id: int, session_id: str, slot_order: list[str]
+        self,
+        message_id: int,
+        session_id: str,
+        slot_order: list[str],
+        map_type: str = "voting",
     ) -> None:
-        """Persist message_id → {session_id, slot_order} mapping."""
-        payload = json.dumps({"session_id": session_id, "slot_order": slot_order})
+        """Persist message_id → {session_id, slot_order, type} mapping.
+
+        map_type is "voting" for session_proposed messages and "attendance"
+        for session_confirmed messages.  The voting cog reads this field to
+        decide how to handle reactions on each message.
+        """
+        payload = json.dumps(
+            {"session_id": session_id, "slot_order": slot_order, "type": map_type}
+        )
         r = await self._get_redis()
         if r:
             try:
@@ -104,7 +118,9 @@ class NotificationsCog(commands.Cog, name="Notifications"):
                 return
             except Exception as exc:
                 log.warning("Redis write failed, storing in memory instead: %s", exc)
-        self._message_map[message_id] = {"session_id": session_id, "slot_order": slot_order}
+        self._message_map[message_id] = {
+            "session_id": session_id, "slot_order": slot_order, "type": map_type
+        }
 
     async def get_message_mapping(self, message_id: int) -> dict | None:
         """Return {session_id, slot_order} for a message_id, or None if unknown.
@@ -257,9 +273,14 @@ class NotificationsCog(commands.Cog, name="Notifications"):
     async def _handle_confirmed(
         self, channel: discord.TextChannel, session_id: str, extra: dict
     ) -> None:
-        """Post a session_confirmed embed."""
+        """Post a session_confirmed embed with attendance RSVP reactions."""
         embed = discord.Embed(title="✅ Session Confirmed", color=_COLOR_CONFIRMED)
         _add_time_field(embed, extra.get("confirmed_time"), "When")
+        embed.add_field(
+            name="Attendance",
+            value="React ✅ if you'll be there, ❌ if you can't make it.",
+            inline=False,
+        )
 
         # Enrich with campaign name from the API.
         try:
@@ -268,8 +289,16 @@ class NotificationsCog(commands.Cog, name="Notifications"):
         except Exception:
             embed.set_footer(text="Quest Board")
 
-        await channel.send(embed=embed)
-        log.info("Posted session_confirmed (session_id=%s)", session_id)
+        message = await channel.send(embed=embed)
+
+        # Seed RSVP reactions and store the message → session mapping so the
+        # voting cog can call put_attendance when players react.
+        for emoji in _ATTENDANCE_EMOJIS:
+            await message.add_reaction(emoji)
+            await asyncio.sleep(0.5)
+
+        await self._store_message_map(message.id, session_id, [], map_type="attendance")
+        log.info("Posted session_confirmed (session_id=%s message_id=%d)", session_id, message.id)
 
     async def _handle_reminder(
         self, channel: discord.TextChannel, session_id: str, extra: dict

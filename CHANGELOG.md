@@ -13,6 +13,38 @@ _Nothing yet._
 
 ---
 
+## [0.8.0] — 2026-03-14
+
+Attendance RSVP. Session-confirmed embeds now include ✅ / ❌ reactions so
+players can indicate attendance directly from Discord. Reactions write to
+Quest Board's existing attendance table — no new backend endpoints required.
+
+### Changed
+
+- **`bot/cogs/notifications.py`**
+  - `_handle_confirmed` — adds an "Attendance" field to the confirmed embed,
+    seeds ✅ then ❌ reactions (0.5 s apart), and stores the message→session
+    mapping with `type: "attendance"` so the voting cog routes reactions
+    correctly
+  - `_store_message_map` — accepts a new `map_type` parameter (default
+    `"voting"`); stores `"type"` key in the mapping payload; backwards-compatible
+    with existing Redis entries (missing key defaults to `"voting"`)
+  - Added `_ATTENDANCE_EMOJIS = ["✅", "❌"]` constant
+
+- **`bot/cogs/voting.py`**
+  - `_handle_reaction` now reads `mapping["type"]` and branches:
+    - `"attendance"` → delegates to new `_handle_attendance_reaction`:
+      ✅ calls `put_attendance(attended=True)`, ❌ calls
+      `put_attendance(attended=False)`; other emojis ignored
+    - `"voting"` (default) → delegates to new `_handle_vote_reaction`
+      (existing logic, now extracted to its own method)
+  - Added `_ATTEND_YES` / `_ATTEND_NO` constants
+
+- **`docs/questboard-improvements.md`** — added four new entries for the
+  Quest Board backend endpoints required by bot v0.9.0 and v0.10.0
+
+---
+
 ## [0.7.0] — 2026-03-14
 
 Polish and hardening. Remote settings, pre-commit security hooks, and a full
@@ -212,7 +244,8 @@ not yet send messages or record votes.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.4.0...v0.5.0

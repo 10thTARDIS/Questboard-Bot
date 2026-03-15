@@ -136,3 +136,68 @@ the session is over; in v0.6.0+ this could also prompt the GM to run `/record`
 if a recording was not already started.
 
 **Priority:** 4 / 5
+
+---
+
+## Guild-scoped next-session endpoint (required for bot v0.9.0)
+
+**Description:** The bot's `/next` slash command needs to find the next confirmed
+session for the Discord server it is invoked from. There is no bot-facing endpoint
+that accepts a `guild_id` and returns the associated campaign's next session.
+
+**How to add:** In `backend/app/routers/bot.py`, add
+`GET /api/bot/guilds/{guild_id}/next-session` with `require_bot_auth`. Query
+`Campaign` by `guild_id`, then find the next confirmed session where
+`confirmed_time > now()` ordered ascending, limit 1. Return
+`{ session_id, campaign_id, campaign_name, game_system, title, confirmed_time }`;
+return 404 if no campaign has that `guild_id` or no upcoming session exists.
+
+**Priority:** 2 / 5
+
+---
+
+## Session summary endpoint (required for bot v0.9.0)
+
+**Description:** The bot's `/recap` command needs to fetch a specific session's
+stored summary and GM notes. No bot-facing endpoint returns these fields today.
+
+**How to add:** In `backend/app/routers/bot.py`, add
+`GET /api/bot/sessions/{session_id}/summary` with `require_bot_auth`. Join
+`Session → Campaign` and return
+`{ session_id, campaign_name, title, confirmed_time, summary, session_notes }`.
+Both `summary` and `session_notes` may be null.
+
+**Priority:** 2 / 5
+
+---
+
+## Bot session note creation endpoint (required for bot v0.9.0)
+
+**Description:** The bot's `/note` command needs to create a `SessionNote` on
+behalf of a linked Discord user. There is no bot-facing endpoint for this today;
+the existing `PUT /sessions/{id}/my-note` requires a user-scoped auth token.
+
+**How to add:** In `backend/app/routers/bot.py`, add
+`POST /api/bot/sessions/{session_id}/notes` with `require_bot_auth`.
+Accept `{ discord_user_id: str, note: str }`. Resolve `discord_user_id` →
+`user_id` via `PlatformLink` (return 404 if not linked). Upsert a `SessionNote`
+with `visibility=private` for that user and session — if a note already exists,
+append the new text on a new line rather than overwriting.
+
+**Priority:** 2 / 5
+
+---
+
+## Session history endpoint for campaign Q&A (required for bot v0.10.0)
+
+**Description:** The bot's `/ask` command builds a context window from past
+session summaries to answer natural-language questions about campaign history.
+No bot-facing endpoint returns a list of completed sessions with their summaries.
+
+**How to add:** In `backend/app/routers/bot.py`, add
+`GET /api/bot/guilds/{guild_id}/sessions/history?limit=N` with `require_bot_auth`.
+Look up the campaign by `guild_id`, then return the most recent N sessions where
+`summary IS NOT NULL` and `status = 'completed'`, ordered `confirmed_time DESC`,
+as `[{ session_id, title, confirmed_time, summary }]`. Default `limit=10`, max 20.
+
+**Priority:** 3 / 5
