@@ -13,6 +13,40 @@ _Nothing yet._
 
 ---
 
+## [0.3.0] — 2026-03-15
+
+Bot-driven Discord notifications. Quest Board's Celery tasks now call
+the bot's HTTP server instead of posting plain webhook embeds on campaigns
+that have a `guild_id` configured.
+
+### Added
+
+- **`bot/cogs/notifications.py`** — full implementation replacing the v0.1.0
+  stub:
+  - `on_bot_notify` listener routes incoming payloads to per-event handlers
+  - `_resolve_channel` — fetches `TextChannel` by ID with clear logging on
+    NotFound / Forbidden errors
+  - **`session_proposed`** — rich embed with one field per time slot using
+    Discord `<t:timestamp:F>` localised timestamps; slot details fetched from
+    `GET /api/bot/sessions/{id}/timeslots`; seed reactions 🇦–🇪 added
+    immediately after posting (0.5 s apart to respect rate limits)
+  - **`session_confirmed`** — embed with confirmed time; campaign name
+    fetched from API
+  - **`session_reminder`** — embed with human-readable label
+    (`_reminder_label` converts `hours_until` to "2 hours", "3 days", etc.)
+    and confirmed time; campaign name fetched from API
+  - **`session_cancelled`** — embed using title and campaign name from payload
+  - **`vote_update`** — embed with per-slot yes / maybe / no counts fetched
+    from API
+  - **`get_message_mapping(message_id)`** — public method used by the voting
+    cog (v0.5.0) to resolve a Discord message ID back to a session ID and
+    ordered slot list
+  - Redis-backed message→session store (`qb_msg:{message_id}`, 30-day TTL);
+    falls back to an in-memory dict if `REDIS_URL` is not set or Redis is
+    unreachable
+
+---
+
 ## [0.2.0] — 2026-03-15
 
 Aligns the API client with the Quest Board v0.2.0 bot endpoints now live
@@ -62,6 +96,7 @@ not yet send messages or record votes.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/10thTARDIS/Questboard-Bot/releases/tag/v0.1.0
