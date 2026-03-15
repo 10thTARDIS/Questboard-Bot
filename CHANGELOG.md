@@ -13,6 +13,29 @@ _Nothing yet._
 
 ---
 
+## [0.5.0] — 2026-03-14
+
+Reaction voting. Emoji reactions on session_proposed messages are now
+translated into Quest Board availability votes in real time.
+
+### Changed
+
+- **`bot/cogs/voting.py`** — full implementation replacing the v0.1.0 stub:
+  - `on_raw_reaction_add` — records `availability="yes"` when a user adds a
+    slot emoji (🇦–🇪) to a session_proposed message
+  - `on_raw_reaction_remove` — records `availability="no"` when a user
+    removes a slot emoji
+  - Looks up the message→session mapping via `NotificationsCog.get_message_mapping`
+    (Redis-backed, 30-day TTL) to resolve emoji position to a `slot_id` without
+    a Quest Board round-trip
+  - Calls `GET /api/bot/platform-links/discord/{user_id}` before voting; on
+    404 sends the user a DM prompting them to run `/link`
+  - Ignores the bot's own seed reactions, non-slot emojis, and messages with
+    no stored mapping; logs and swallows API errors so transient failures don't
+    surface as Discord errors
+
+---
+
 ## [0.4.0] — 2026-03-14
 
 Discord account linking. Players can connect their Discord identity to Quest
@@ -117,7 +140,8 @@ not yet send messages or record votes.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.1.0...v0.2.0
