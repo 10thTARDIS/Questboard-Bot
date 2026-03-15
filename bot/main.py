@@ -49,6 +49,56 @@ class QuestBoardBot(commands.Bot):
     async def on_ready(self) -> None:
         log.info("Logged in as %s (id=%s)", self.user, self.user.id)
         _cleanup_audio_temp(self.settings.audio_temp_dir)
+        await self._apply_remote_settings()
+
+    async def _apply_remote_settings(self) -> None:
+        """Fetch admin-configured settings from Quest Board and apply overrides.
+
+        Environment variables remain as documented defaults; values set in the
+        Quest Board admin panel (Whisper/LLM config) take precedence if present.
+        Non-critical — a failure here is logged but does not prevent the bot
+        from operating with its env-var defaults.
+        """
+        try:
+            remote = await self.api.get_bot_settings()
+        except Exception as exc:
+            log.warning(
+                "Could not fetch bot settings from Quest Board (using env defaults): %s", exc
+            )
+            return
+
+        overrides: list[str] = []
+
+        if remote.whisper_endpoint_url:
+            self.settings.whisper_api_url = remote.whisper_endpoint_url
+            overrides.append(f"whisper_api_url={remote.whisper_endpoint_url!r}")
+
+        if remote.llm_endpoint_url:
+            self.settings.ollama_url = remote.llm_endpoint_url
+            overrides.append(f"ollama_url={remote.llm_endpoint_url!r}")
+
+        if remote.llm_model:
+            self.settings.ollama_model = remote.llm_model
+            overrides.append(f"ollama_model={remote.llm_model!r}")
+
+        # API keys from the admin panel override blank env vars (never logged).
+        if remote.whisper_api_key and not self.settings.openai_api_key:
+            self.settings.openai_api_key = remote.whisper_api_key
+            overrides.append("openai_api_key=<set from admin panel>")
+
+        if remote.llm_api_key:
+            # Could be an Anthropic or OpenAI key — apply to whichever is blank.
+            if not self.settings.anthropic_api_key:
+                self.settings.anthropic_api_key = remote.llm_api_key
+                overrides.append("anthropic_api_key=<set from admin panel>")
+            elif not self.settings.openai_api_key:
+                self.settings.openai_api_key = remote.llm_api_key
+                overrides.append("openai_api_key=<set from admin panel>")
+
+        if overrides:
+            log.info("Applied remote settings: %s", ", ".join(overrides))
+        else:
+            log.info("Remote settings fetched — no overrides (env defaults in use).")
 
     async def close(self) -> None:
         await self.api.close()

@@ -13,6 +13,32 @@ _Nothing yet._
 
 ---
 
+## [0.7.0] — 2026-03-14
+
+Polish and hardening. Remote settings, pre-commit security hooks, and a full
+setup guide in the README.
+
+### Added
+
+- **`.pre-commit-config.yaml`** — pre-commit hooks: trailing-whitespace,
+  end-of-file-fixer, check-yaml, check-added-large-files (500 KB limit),
+  check-merge-conflict, detect-private-key, and a local `pip-audit` hook
+  that runs on every change to `requirements.txt`
+- **README** — full setup guide covering: Discord Developer Portal walkthrough,
+  Quest Board admin configuration, account linking, reaction voting, recording
+  pipeline, Whisper model trade-offs, Ollama model recommendations, and a
+  troubleshooting section
+
+### Changed
+
+- **`bot/main.py`** — `on_ready` now calls `_apply_remote_settings`, which
+  fetches `GET /api/bot/settings` from Quest Board and applies admin-configured
+  Whisper/LLM endpoints, models, and API keys on top of env-var defaults;
+  failure is logged as a warning and does not prevent the bot from starting;
+  API keys are never logged (placeholder string used in log line)
+
+---
+
 ## [0.6.0] — 2026-03-14
 
 Voice recording, transcription, and summarisation pipeline.  GMs can record
@@ -186,7 +212,8 @@ not yet send messages or record votes.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.3.0...v0.4.0
