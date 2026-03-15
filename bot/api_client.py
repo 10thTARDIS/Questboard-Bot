@@ -77,16 +77,15 @@ class LinkStatusResponse(BaseModel):
 class BotSettingsResponse(BaseModel):
     """Returned by GET /api/bot/settings (added in v0.2.0).
 
-    All fields are optional — only set fields are returned.
+    Mirrors the shape Quest Board returns from its whisper_config and
+    llm_config app_settings rows. All fields are optional.
     """
 
-    whisper_mode: str | None = None
-    whisper_api_url: str | None = None
-    openai_api_key: str | None = None
-    summariser_mode: str | None = None
-    ollama_url: str | None = None
-    ollama_model: str | None = None
-    anthropic_api_key: str | None = None
+    whisper_endpoint_url: str | None = None
+    whisper_api_key: str | None = None
+    llm_endpoint_url: str | None = None
+    llm_api_key: str | None = None
+    llm_model: str | None = None
 
 
 # ── Client ────────────────────────────────────────────────────────────────────

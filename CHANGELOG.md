@@ -13,6 +13,22 @@ _Nothing yet._
 
 ---
 
+## [0.2.0] — 2026-03-15
+
+Aligns the API client with the Quest Board v0.2.0 bot endpoints now live
+on the backend. No new bot behaviour in this release — all functional work
+was Quest Board-side (Campaign fields, five new bot endpoints, `/auth/link`,
+linking token Redis flow, and Celery notification routing).
+
+### Changed
+
+- **`bot/api_client.py`** — `BotSettingsResponse` updated to match the
+  actual shape returned by `GET /api/bot/settings`: fields renamed from
+  bot-centric names (`whisper_mode`, `ollama_url`, …) to the names Quest
+  Board uses (`whisper_endpoint_url`, `llm_endpoint_url`, `llm_model`, …)
+
+---
+
 ## [0.1.0] — 2026-03-14
 
 Initial scaffold. Project structure, configuration, typed API client, and
@@ -46,5 +62,6 @@ not yet send messages or record votes.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/10thTARDIS/Questboard-Bot/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/10thTARDIS/Questboard-Bot/releases/tag/v0.1.0

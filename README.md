@@ -10,8 +10,8 @@ joins voice channels to record, transcribe, and summarise game sessions.
 | Version | Feature | Status |
 |---|---|---|
 | v0.1.0 | Scaffold & API client | ✅ Done |
-| v0.2.0 | Quest Board additions | 🔜 Next |
-| v0.3.0 | Discord notifications | 🔜 Planned |
+| v0.2.0 | Quest Board additions | ✅ Done |
+| v0.3.0 | Discord notifications | 🔜 Next |
 | v0.4.0 | Account linking | 🔜 Planned |
 | v0.5.0 | Reaction voting | 🔜 Planned |
 | v0.6.0 | Recording & transcription | 🔜 Planned |
