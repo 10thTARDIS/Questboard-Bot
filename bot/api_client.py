@@ -4,7 +4,8 @@ All bot → Quest Board calls go through this module.
 Auth: X-Bot-Key header (shared secret, must match Quest Board's bot_api_key
 app_setting).
 
-Quest Board base URL: QUESTBOARD_API_URL (e.g. http://questboard-backend:8000)
+Quest Board base URL: QUESTBOARD_API_URL (e.g. https://questboard.example.com)
+Nginx proxies /api to the FastAPI backend; use the root URL, not /api directly.
 All bot endpoints are mounted at /api/bot/ in Quest Board.
 """
 

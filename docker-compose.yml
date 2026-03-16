@@ -5,8 +5,8 @@ services:
     restart: unless-stopped
     ports:
       # HTTP server for incoming Quest Board notify calls.
-      # Set QUESTBOARD_BOT_URL=http://<this-host>:8080 in Quest Board's .env.
-      # If Quest Board runs on the same Docker host, use its internal network instead.
+      # Set the Bot URL to http://<this-host>:8080 in Quest Board Admin → Bot Settings.
+      # If Quest Board runs on the same Docker host, use its internal network address instead.
       - "8080:8080"
     volumes:
       - audio_temp:/tmp/questboard-audio

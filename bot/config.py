@@ -18,8 +18,10 @@ class Settings(BaseSettings):
     discord_bot_token: str
 
     # ── Quest Board API ───────────────────────────────────────────────────
-    questboard_api_url: str = "http://questboard-backend:8000"
-    # Must match the key set in Quest Board admin panel → Bot Settings
+    # Public HTTPS URL of your Quest Board instance (no trailing slash).
+    # Nginx proxies /api to the backend — use the root URL, not /api directly.
+    questboard_api_url: str = "https://questboard.example.com"
+    # Copy from Quest Board Admin → Bot Settings → Bot API Key.
     bot_api_key: str
 
     # ── HTTP server ───────────────────────────────────────────────────────

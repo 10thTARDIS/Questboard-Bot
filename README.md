@@ -53,11 +53,7 @@ All settings are documented in [.env.example](.env.example).
 
 **Required:**
 - `DISCORD_BOT_TOKEN` — from Discord Developer Portal → Bot → Token
-- `BOT_API_KEY` — generate with `openssl rand -hex 32`; set the same value
-  in Quest Board Admin → Bot Settings → Bot API Key
-
-**In Quest Board's `.env`:**
-- `QUESTBOARD_BOT_URL=http://<bot-host>:8080` — the bot's HTTP server address
+- `BOT_API_KEY` — copy from Quest Board Admin → Bot Settings → Bot API Key
 
 **Optional overrides** (can also be set in Quest Board Admin → Bot Settings):
 - `WHISPER_MODE` — `local` (default, uses bundled Whisper container) or `api` (OpenAI)
@@ -86,7 +82,9 @@ All settings are documented in [.env.example](.env.example).
 After starting the bot, configure it in Quest Board's admin panel:
 
 1. **Admin → Bot Settings**:
-   - Paste your `BOT_API_KEY` into **Bot API Key**
+   - Copy the **Bot API Key** shown here into `BOT_API_KEY` in the bot's `.env`
+   - Set **Bot URL** to `http://<bot-host>:8080` — the address Quest Board uses to
+     reach the bot's HTTP server
    - Optionally configure Whisper and LLM endpoints (overrides `.env` values)
 
 2. **Campaign Settings** (per campaign):
@@ -95,7 +93,7 @@ After starting the bot, configure it in Quest Board's admin panel:
    - **Notification Channel ID** — the text channel where session embeds should appear
      (right-click channel → Copy Channel ID)
 
-Once both are set, Quest Board will route session notifications through the bot
+Once all three are set, Quest Board will route session notifications through the bot
 instead of plain webhooks.
 
 ## Account Linking
@@ -232,9 +230,9 @@ Quest Board API  (BOT_API_KEY auth via X-Bot-Key header)
 ## Troubleshooting
 
 **Bot connects but no notifications appear**
-- Confirm `QUESTBOARD_BOT_URL` is set in Quest Board's `.env` and points to the bot's host/port
+- Confirm **Bot URL** is set in Quest Board Admin → Bot Settings and points to the bot's host/port
 - Confirm the campaign has `Guild ID` and `Notification Channel ID` set
-- Check `BOT_API_KEY` matches in both `.env` files
+- Check `BOT_API_KEY` in `.env` matches the key in Quest Board Admin → Bot Settings
 - Check `docker compose logs bot` for any `401 Unauthorized` or connection errors
 
 **Reactions aren't being recorded as votes**

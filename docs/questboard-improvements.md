@@ -92,7 +92,7 @@ yes/maybe/no tallies is never displayed.
 
 **How to add:** In `backend/app/tasks/reminder_tasks.py`, update
 `send_vote_notification` with the same bot-routing pattern used by the other
-tasks: if `guild_id` and `QUESTBOARD_BOT_URL` are set, call
+tasks: if `guild_id` and the bot URL (from Bot Settings) are set, call
 `POST {bot_url}/notify` with `event_type: "vote_update"`. The `session_id`,
 `campaign_id`, `guild_id`, and `channel_id` will need to be added as task
 arguments; update the call site in `backend/app/services/vote_service.py`
