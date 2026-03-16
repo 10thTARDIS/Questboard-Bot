@@ -17,7 +17,7 @@ certifi==2024.8.30
     # via httpcore, httpx
 cffi==1.17.1
     # via pynacl
-discord.py[voice]==2.4.0
+py-cord==2.6.1
     # via requirements.in
 frozenlist==1.4.1
     # via aiohttp, aiosignal
