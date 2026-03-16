@@ -41,6 +41,10 @@ $EDITOR .env
 
 # 4. Start the bot
 docker compose up -d
+
+# Optional: also start the local Whisper transcription service
+# (required for /record if WHISPER_MODE=local and no OpenAI key is set)
+docker compose --profile whisper up -d
 ```
 
 ## Configuration
@@ -73,7 +77,8 @@ All settings are documented in [.env.example](.env.example).
 4. **OAuth2 → URL Generator**:
    - Scopes: `bot` + `applications.commands`
    - Bot permissions: **Read Messages/View Channels**, **Send Messages**,
-     **Send Messages in Threads**, **Add Reactions**, **Connect**, **Speak**
+     **Send Messages in Threads**, **Read Message History**, **Add Reactions**,
+     **Connect**, **Speak**
    - Copy the generated URL and open it in a browser to invite the bot to your server
 
 ## Quest Board Admin Setup
@@ -134,6 +139,13 @@ The `session_id` for `/recap` and `/note` is the UUID shown in the Quest Board
 session URL.
 
 ## Recording a Session
+
+Recording requires a transcription backend. Choose one:
+
+- **Local Whisper** (default) — start the bundled container with
+  `docker compose --profile whisper up -d`, or configure a URL in
+  Quest Board Admin → Bot Settings
+- **OpenAI API** — set `WHISPER_MODE=api` and `OPENAI_API_KEY` in `.env`
 
 Only the GM needs to run these commands:
 

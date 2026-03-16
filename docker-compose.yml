@@ -2,8 +2,6 @@ services:
   bot:
     build: .
     env_file: .env
-    depends_on:
-      - whisper
     restart: unless-stopped
     ports:
       # HTTP server for incoming Quest Board notify calls.
@@ -20,6 +18,7 @@ services:
       start_period: 15s
 
   whisper:
+    profiles: [whisper]
     image: ahmetoner/whisper-asr-webservice:latest
     # NOT exposed on public ports — internal only.
     # ASR_MODEL options: base (fastest), small, medium (most accurate)
@@ -29,6 +28,7 @@ services:
 
   # Uncomment only if Ollama is not already running on your home server.
   # ollama:
+  #   profiles: [ollama]
   #   image: ollama/ollama
   #   volumes:
   #     - ollama_data:/root/.ollama
