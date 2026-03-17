@@ -11,7 +11,7 @@ services:
     volumes:
       - audio_temp:/tmp/questboard-audio
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health')\""]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:${HTTP_PORT:-8080}/health')\""]
       interval: 30s
       timeout: 10s
       retries: 3
