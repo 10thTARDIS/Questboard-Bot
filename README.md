@@ -67,14 +67,19 @@ All settings are documented in [.env.example](.env.example).
 3. **Bot** tab:
    - Click **Add Bot** → **Yes, do it!**
    - Under **Privileged Gateway Intents**, enable:
-     - ✅ **Server Members Intent**
-     - ✅ **Message Content Intent**
+     - ✅ **Message Content Intent** (required for message content access)
    - Click **Reset Token** → copy the token to `DISCORD_BOT_TOKEN` in `.env`
 4. **OAuth2 → URL Generator**:
    - Scopes: `bot` + `applications.commands`
-   - Bot permissions: **Read Messages/View Channels**, **Send Messages**,
-     **Send Messages in Threads**, **Read Message History**, **Add Reactions**,
-     **Connect**, **Speak**
+   - Bot permissions:
+     - **Read Messages/View Channels** — see channels and their content
+     - **Send Messages** — post notification embeds and recording status
+     - **Send Messages in Threads** — if your notification channel uses threads
+     - **Embed Links** — required for rich embeds to render
+     - **Read Message History** — required for reaction handling on older messages
+     - **Add Reactions** — seed 🇦🇧🇨🇩🇪 on proposed sessions and ✅❌ on confirmed sessions
+     - **Connect** — join voice channels to record sessions
+     - **Use Voice Activity** — receive audio streams from participants
    - Copy the generated URL and open it in a browser to invite the bot to your server
 
 ## Quest Board Admin Setup
